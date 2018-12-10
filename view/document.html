@@ -116,13 +116,15 @@
                             <div class="table-responsive">
                                 <div>
                                     <form action="/document" method="post" enctype="multipart/form-data">
-                                        <input  type="file" name="file" id="file"   placeholder="Choose file">
-                                        <button title="Upload document"  class="btn btn-dark  btn-round" type="submit">
+                                        <div class="card">
+                                        <input  type="file" name="file" id="file"  placeholder="Choose file">
+                                        <button title="Upload document"  class="btn btn-info  btn-round" type="submit">
                                             <i class="now-ui-icons arrows-1_cloud-upload-94"></i> Upload
                                         </button>
                                         <button title="Clean fields"  class="btn btn-dark  btn-round" type="reset">
                                             <i class="now-ui-icons ui-1_simple-remove"></i> Cancel
                                         </button>
+                                        </div>
                                     </form>
                                    </div>
                                 <table class="table">
@@ -147,7 +149,7 @@
                                         <td>{{ .Name }}</td>
                                         <td>{{ .Size }}</td>
                                         <td class="td-actions text-center">
-                                            <a title="Delete user" class="btn btn-warning btn-round" role="button" href="/user/{{.ID}}" onclick="return confirm('¿Seguro que deseas eliminarlo?')">
+                                            <a title="Delete user" class="btn btn-warning btn-round" role="button" href="/document/{{.ID}}" onclick="return confirm('¿Seguro que deseas eliminarlo?')">
                                                 <span class="now-ui-icons ui-1_simple-remove" aria-hidden="true"></span> Delete
                                             </a>
                                     </tr>
