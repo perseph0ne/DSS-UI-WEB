@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/perseph0ne/DSS-UI-WEB/model"
 	"github.com/streadway/amqp"
@@ -34,7 +35,7 @@ func generateBodySendDocumentRPC(doc model.Document, act model.RequestBase) (bod
 	return
 }
 func documentRPC(bodySend []byte) (docs []model.Document, err error) {
-	conn, err := amqp.Dial("amqp://test:Password123@68.183.130.209:15672/")
+	conn, err := amqp.Dial("amqp://test:Password123@68.183.130.209:5672/")
 	if err != nil {
 		err = errors.New("Failed to connect to RabbitMQ " + err.Error())
 		return
@@ -50,13 +51,13 @@ func documentRPC(bodySend []byte) (docs []model.Document, err error) {
 	//failOnError(err, "Failed to open a channel")
 	defer ch.Close()
 
-	q, err := ch.QueueDeclare(
-		"",    // name
-		true,  // durable
-		false, // delete when usused
-		false, // exclusive
-		false, // noWait
-		nil,   // arguments
+	_, err = ch.QueueDeclare(
+		"yoyo_request", // name
+		false,          // durable
+		false,          // delete when usused
+		false,          // exclusive
+		false,          // noWait
+		nil,            // arguments
 	)
 	if err != nil {
 		err = errors.New("Failed to declare a queue " + err.Error())
@@ -65,13 +66,13 @@ func documentRPC(bodySend []byte) (docs []model.Document, err error) {
 	//failOnError(err, "Failed to declare a queue")
 
 	msgs, err := ch.Consume(
-		q.Name, // queue
-		"",     // consumer
-		true,   // auto-ack
-		false,  // exclusive
-		false,  // no-local
-		false,  // no-wait
-		nil,    // args
+		"yoyo_response", // queue
+		"",              // consumer
+		true,            // auto-ack
+		false,           // exclusive
+		false,           // no-local
+		false,           // no-wait
+		nil,             // args
 	)
 	if err != nil {
 		err = errors.New("Failed to register a consumer " + err.Error())
@@ -82,15 +83,15 @@ func documentRPC(bodySend []byte) (docs []model.Document, err error) {
 	corrId := randomString(32)
 
 	err = ch.Publish(
-		"",              // exchange
-		"yoyo_response", // routing key
-		false,           // mandatory
-		false,           // immediate
+		"",             // exchange
+		"yoyo_request", // routing key
+		false,          // mandatory
+		false,          // immediate
 		amqp.Publishing{
 			DeliveryMode:  amqp.Persistent,
 			ContentType:   "application/json",
 			CorrelationId: corrId,
-			ReplyTo:       q.Name,
+			ReplyTo:       "yoyo_response",
 			Body:          bodySend,
 		})
 	if err != nil {
@@ -101,9 +102,11 @@ func documentRPC(bodySend []byte) (docs []model.Document, err error) {
 
 	for d := range msgs {
 		if corrId == d.CorrelationId {
-			bodyJson, _ := json.Marshal(d.Body)
+			//bodyJson, _ := json.Marshal(d.Body)
+			//return errors.New(string(bodyJson))
 			var respRPC model.Result
-			json.Unmarshal([]byte(bodyJson), &respRPC)
+			json.Unmarshal(d.Body, &respRPC)
+			fmt.Println(respRPC.Json)
 			json.Unmarshal([]byte(respRPC.Json), &docs)
 			if respRPC.Code == 0 {
 				err = nil

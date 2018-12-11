@@ -33,12 +33,12 @@ func emailRPC(bodySend []byte) (err error) {
 	defer ch.Close()
 
 	_, err = ch.QueueDeclare(
-		"yoyo_request", // name
-		false,          // durable
-		false,          // delete when usused
-		false,          // exclusive
-		false,          // noWait
-		nil,            // arguments
+		"yoyo_request_mail", // name
+		true,                // durable
+		false,               // delete when usused
+		false,               // exclusive
+		false,               // noWait
+		nil,                 // arguments
 	)
 	if err != nil {
 		err = errors.New("Failed to declare a queue " + err.Error())
@@ -47,13 +47,13 @@ func emailRPC(bodySend []byte) (err error) {
 	//failOnError(err, "Failed to declare a queue")
 
 	msgs, err := ch.Consume(
-		"yoyo_response", // queue
-		"",              // consumer
-		true,            // auto-ack
-		false,           // exclusive
-		false,           // no-local
-		false,           // no-wait
-		nil,             // args
+		"yoyo_response_mail", // queue
+		"",                   // consumer
+		true,                 // auto-ack
+		false,                // exclusive
+		false,                // no-local
+		false,                // no-wait
+		nil,                  // args
 	)
 	if err != nil {
 		err = errors.New("Failed to register a consumer " + err.Error())
@@ -64,14 +64,14 @@ func emailRPC(bodySend []byte) (err error) {
 	corrId := randomString(32)
 
 	err = ch.Publish(
-		"",             // exchange
-		"yoyo_request", // routing key
-		false,          // mandatory
-		false,          // immediate
+		"",                  // exchange
+		"yoyo_request_mail", // routing key
+		false,               // mandatory
+		false,               // immediate
 		amqp.Publishing{
 			ContentType:   "application/json",
 			CorrelationId: corrId,
-			ReplyTo:       "yoyo_response",
+			ReplyTo:       "yoyo_response_mail",
 			Body:          bodySend,
 		})
 	if err != nil {
@@ -82,9 +82,9 @@ func emailRPC(bodySend []byte) (err error) {
 
 	for d := range msgs {
 		if corrId == d.CorrelationId {
-			bodyJson, _ := json.Marshal(d.Body)
+			//bodyJson, _ := json.Marshal(d.Body)
 			var respRPC model.Result
-			json.Unmarshal(bodyJson, &respRPC)
+			json.Unmarshal(d.Body, &respRPC)
 			if respRPC.Code == 0 {
 				err = nil
 			} else {
